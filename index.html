@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE TIMELESS EXHIBITION</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Roboto+Mono:wght@300;400;700&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* === 커스텀 스타일 === */
+        :root {
+            --theme-color: #ef4444;
+            --theme-glow: rgba(239, 68, 68, 0.5);
+        }
+        
+        body {
+            background-color: #050505;
+            color: white;
+            font-family: 'Noto Sans KR', sans-serif;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        .font-museum { font-family: 'Cinzel', serif; }
+        .font-cyber { font-family: 'Roboto Mono', monospace; }
+
+        /* 스크롤바 숨기기 */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 애니메이션 */
+        @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .animate-scroll { animation: scroll-left 30s linear infinite; }
+        .animate-legends { animation: scroll-left 60s linear infinite; }
+        
+        @keyframes scanline { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+        .animate-scan { animation: scanline 3s linear infinite; }
+        
+        .grid-bg { background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px); background-size: 40px 40px; }
+        
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .fade-in-fast { animation: fadeInFast 0.3s ease-out forwards; }
+        @keyframes fadeInFast { from { opacity: 0.5; } to { opacity: 1; } }
+
+        /* 커스텀 커서 */
+        #custom-cursor {
+            position: fixed; pointer-events: none; z-index: 9999;
+            transition: transform 0.05s ease-out;
+            mix-blend-mode: difference;
+        }
+
+        /* 유틸리티 */
+        .text-theme { color: var(--theme-color); transition: color 0.3s; }
+        .bg-theme { background-color: var(--theme-color); transition: background-color 0.3s; }
+        .border-theme { border-color: var(--theme-color); transition: border-color 0.3s; }
+        
+        /* 네비게이션 활성화 스타일 */
+        .nav-btn { position: relative; }
+        .nav-active { color: white !important; transform: translateY(-4px); }
+        .nav-active i { filter: drop-shadow(0 0 5px var(--theme-color)); }
+        
+        .nav-indicator {
+            position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%) scale(0);
+            width: 4px; height: 4px; background-color: var(--theme-color); border-radius: 50%;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 8px var(--theme-color);
+        }
+        .nav-active .nav-indicator { transform: translateX(-50%) scale(1); }
+
+        .perspective-1000 { perspective: 1000px; }
+        .viewer-ui-hidden { transform: translateY(-100%); }
+        .viewer-ui-hidden-bottom { transform: translateY(100%); }
+        .chapter-list-hidden { transform: translateX(-100%); }
+        .rotate-y-6 { transform: rotateY(6deg); }
+
+        #theme-selector {
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+        }
+
+        * { cursor: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="custom-cursor">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="var(--theme-color)" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+    </div>
+
+    <main id="app-container" class="min-h-screen pb-32 fade-in relative z-10"></main>
+
+    <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[90] w-auto">
+        <div id="theme-selector" class="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 p-3 bg-[#0a0a0a]/90 backdrop-blur-2xl border border-white/10 rounded-full shadow-2xl flex gap-2 origin-bottom scale-90 opacity-0 invisible"></div>
+
+        <div class="flex items-center gap-2 px-6 py-4 bg-[#0a0a0a]/90 backdrop-blur-2xl border border-white/10 rounded-full shadow-2xl ring-1 ring-white/5">
+            <button onclick="renderTab('HOME')" id="nav-home" class="nav-btn relative flex flex-col items-center justify-center w-10 h-10 transition-all duration-300 rounded-full group hover:bg-white/10 text-gray-500 hover:text-gray-300">
+                <i data-lucide="home" class="w-5 h-5"></i>
+                <div class="nav-indicator"></div>
+            </button>
+            <button onclick="renderTab('SEARCH')" id="nav-search" class="nav-btn relative flex flex-col items-center justify-center w-10 h-10 transition-all duration-300 rounded-full group hover:bg-white/10 text-gray-500 hover:text-gray-300">
+                <i data-lucide="search" class="w-5 h-5"></i>
+                <div class="nav-indicator"></div>
+            </button>
+            
+            <div class="mx-4 relative group cursor-pointer" onclick="toggleThemeSelector()">
+                <div class="absolute inset-0 bg-theme rounded-full blur-xl opacity-20 group-hover:opacity-50 animate-pulse transition-opacity"></div>
+                <div class="relative w-14 h-14 bg-gradient-to-b from-[#222] to-[#050505] border border-white/20 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 active:scale-95 transition-all overflow-hidden">
+                    <div class="text-theme drop-shadow-[0_0_8px_var(--theme-glow)]">
+                        <i data-lucide="flame" class="w-6 h-6 fill-current"></i>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="renderTab('ARCHIVE')" id="nav-archive" class="nav-btn relative flex flex-col items-center justify-center w-10 h-10 transition-all duration-300 rounded-full group hover:bg-white/10 text-gray-500 hover:text-gray-300">
+                <i data-lucide="ticket" class="w-5 h-5"></i>
+                <div class="nav-indicator"></div>
+            </button>
+            <button onclick="renderTab('PROFILE')" id="nav-profile" class="nav-btn relative flex flex-col items-center justify-center w-10 h-10 transition-all duration-300 rounded-full group hover:bg-white/10 text-gray-500 hover:text-gray-300">
+                <i data-lucide="user" class="w-5 h-5"></i>
+                <div class="nav-indicator"></div>
+            </button>
+        </div>
+    </div>
+
+    <div id="modal-overlay" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-md" onclick="closeModal()"></div>
+        <div class="relative w-full h-full flex items-center justify-center md:items-start md:pt-10 p-0 md:p-4 pointer-events-none">
+             <div id="modal-content" class="relative bg-[#121212] w-full max-w-3xl h-full md:h-[90vh] overflow-y-auto md:rounded-xl shadow-2xl flex flex-col pointer-events-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
+                </div>
+        </div>
+    </div>
+
+    <div id="viewer-overlay" class="fixed inset-0 z-[200] bg-black hidden flex-col"></div>
+
+    <script>
+        const comicsData = {
+            BERSERK: {
+                title: "BERSERK", author: "Kentaro Miura",
+                tags: ["#DarkFantasy", "#Action", "#Masterpiece", "#Gore"],
+                desc: "A former mercenary and branded wanderer who travels the world in a constant internal struggle between pursuing his own ends and protecting those dear to him.",
+                thumb: "https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?q=80&w=800",
+                viewerImages: [
+                    "https://images.unsplash.com/photo-1614726365208-036648c65948?q=80&w=800&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=800&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=800&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=800&auto=format&fit=crop"
+                ],
+                comments: [
+                    { user: "GutsFan99", text: "그리피스... 용서할 수 없다.", likes: "1.2k" },
+                    { user: "Casca_Lover", text: "작화가 진짜 미쳤네요. 영혼을 갈아넣음.", likes: "856" }
+                ],
+                pins: [
+                    { imageIndex: 1, x: 50, y: 40, title: "운명의 시작", comment: "이 장면에서 소름 돋았음..." }
+                ]
+            },
+            AKIRA: {
+                title: "AKIRA", author: "Katsuhiro Otomo",
+                tags: ["#Cyberpunk", "#Sci-Fi", "#Dystopia", "#Bike"],
+                desc: "A secret military project endangers Neo-Tokyo when it turns a biker gang member into a rampaging psychic psychopath.",
+                thumb: "https://images.unsplash.com/photo-1535905557558-afc4877a26fc?q=80&w=1000",
+                viewerImages: ["https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=800&auto=format&fit=crop"],
+                comments: [{ user: "Kaneda_Bike", text: "바이크 슬라이딩 장면은 전설이다.", likes: "2.1k" }],
+                pins: [{ imageIndex: 0, x: 40, y: 50, title: "네오 도쿄", comment: "작화 디테일 실화냐" }]
+            },
+            EVANGELION: {
+                title: "EVANGELION", author: "Yoshiyuki Sadamoto",
+                tags: ["#Mecha", "#Psychological", "#Sci-Fi"],
+                desc: "In the year 2015, the world stands on the brink of destruction. The last hope for humanity lies in the hands of Nerv.",
+                thumb: "https://images.unsplash.com/photo-1519638399535-1b036603ac77?q=80&w=800",
+                viewerImages: ["https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=800"],
+                comments: [],
+                pins: []
+            },
+            MONSTER: {
+                title: "MONSTER", author: "Naoki Urasawa",
+                tags: ["#Thriller", "#Psychological", "#Mystery"],
+                desc: "Dr. Kenzo Tenma is a young Japanese brain surgeon. He saves the life of a young boy, Johan, only to find out later that he saved a monster.",
+                thumb: "https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?q=80&w=1000",
+                viewerImages: ["https://images.unsplash.com/photo-1478720568477-152d9b164e63?q=80&w=800&auto=format&fit=crop"],
+                comments: [{ user: "Dr_Tenma", text: "생명은 평등하다.", likes: "1.5k" }],
+                pins: []
+            },
+            SLAMDUNK: {
+                title: "SLAM DUNK", author: "Takehiko Inoue",
+                tags: ["#Sports", "#Basketball", "#Youth", "#Growth"],
+                desc: "Hanamichi Sakuragi is a delinquent and a leader of a gang. He joins the basketball team to impress a girl.",
+                thumb: "https://images.unsplash.com/photo-1546519638-68e109498ee3?q=80&w=800",
+                viewerImages: ["https://images.unsplash.com/photo-1515405295579-ba7f9f1d848e?q=80&w=800&auto=format&fit=crop"],
+                comments: [{ user: "Shohoku_10", text: "왼손은 거들 뿐.", likes: "5.4k" }],
+                pins: []
+            }
+        };
+
+        const weeklyTop = [
+            { rank: "01", title: "BERSERK", author: "Kentaro Miura", change: "UP", img: "https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?q=80&w=800" },
+            { rank: "02", title: "AKIRA", author: "Katsuhiro Otomo", change: "-", img: "https://images.unsplash.com/photo-1535905557558-afc4877a26fc?q=80&w=1000" },
+            { rank: "03", title: "MONSTER", author: "Naoki Urasawa", change: "DOWN", img: "https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?q=80&w=1000" },
+            { rank: "04", title: "EVANGELION", author: "Yoshiyuki Sadamoto", change: "NEW", img: "https://images.unsplash.com/photo-1519638399535-1b036603ac77?q=80&w=800" },
+            { rank: "05", title: "SLAM DUNK", author: "Takehiko Inoue", change: "UP", img: "https://images.unsplash.com/photo-1546519638-68e109498ee3?q=80&w=800" },
+        ];
+
+        const genres = [
+            { name: "CYBERPUNK", desc: "High Tech, Low Life", color: "from-cyan-900" },
+            { name: "DARK FANTASY", desc: "Knights & Monsters", color: "from-red-900" },
+            { name: "PSYCHOLOGICAL", desc: "Mind Games", color: "from-purple-900" },
+            { name: "DYSTOPIA", desc: "Ruined World", color: "from-yellow-900" },
+        ];
+
+        const legends = [
+            { id: "AKIRA", title: "GHOST IN THE SHELL", img: "https://source.unsplash.com/random/300x450?cyberpunk,anime&sig=1" },
+            { id: "EVANGELION", title: "EVANGELION", img: "https://source.unsplash.com/random/300x450?mech,anime&sig=2" },
+            { id: "SLAMDUNK", title: "COWBOY BEBOP", img: "https://source.unsplash.com/random/300x450?space,noir&sig=3" },
+            { id: "MONSTER", title: "MONSTER", img: "https://source.unsplash.com/random/300x450?thriller,dark&sig=4" }
+        ];
+
+        const searchDatabase = [
+            { id: "GUTS", name: "GUTS", subtitle: "THE STRUGGLER", type: "CHARACTER", img: "가츠 그리피스 홀로.png", desc: "Wielder of the Dragonslayer. Marked for sacrifice.", stats: { str: 98, spd: 75, int: 60 } },
+            { id: "KANEDA", name: "KANEDA", subtitle: "CAPSULE LEADER", type: "CHARACTER", img: "카네다_검색사진.jpg", desc: "Leader of the Capsules gang.", stats: { str: 65, spd: 95, int: 80 } },
+            { id: "EVA01", name: "EVA UNIT-01", subtitle: "TEST TYPE", type: "MECHA", img: "에바_검색사진.jpg", desc: "A humanoid weapon developed by NERV.", stats: { str: 100, spd: 85, int: 50 } },
+            { id: "SPIKE", name: "SPIKE SPIEGEL", subtitle: "SPACE COWBOY", type: "CHARACTER", img: "스파이크_검색사진.jpg", desc: "A bounty hunter on the spaceship Bebop.", stats: { str: 80, spd: 90, int: 88 } },
+            { id: "DSLAYER", name: "DRAGON SLAYER", subtitle: "ARTIFACT", type: "WEAPON", img: "드래곤슬레이어_검색사진.jpg", desc: "It was too big to be called a sword. Massive, thick, heavy, and far too rough.", stats: { str: 100, spd: 20, int: 10 } },
+        ];
+
+        let archiveData = [
+            { id: 1, title: "Guts' Rage", type: "SCENE", img: "https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?q=80&w=400&fit=crop&sat=-100", date: "2024.03.10" },
+            { id: 2, title: "Neo Tokyo", type: "BG", img: "https://images.unsplash.com/photo-1535905557558-afc4877a26fc?q=80&w=400&fit=crop&sat=-100", date: "2024.03.09" },
+            { id: 3, title: "Griffith", type: "CHAR", img: "https://pngimg.com/uploads/knight/knight_PNG57.png", date: "2024.03.08" },
+            { id: 4, title: "Quote #23", type: "TEXT", img: null, text: "He who fights with monsters...", date: "2024.03.01" },
+        ];
+
+        const themes = [
+            { color: '#ef4444', glow: 'rgba(239, 68, 68, 0.5)' },
+            { color: '#06b6d4', glow: 'rgba(6, 182, 212, 0.5)' },
+            { color: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.5)' },
+            { color: '#eab308', glow: 'rgba(234, 179, 8, 0.5)' },
+            { color: '#22c55e', glow: 'rgba(34, 197, 94, 0.5)' }
+        ];
+
+        let state = {
+            themeIndex: 0,
+            activeTab: 'HOME',
+            currentComic: null,
+            searchSelectedId: 'DSLAYER',
+            viewerUIHidden: false,
+            viewerShowChapterList: false,
+            activePinId: null,
+            currentEpisode: 1,
+            viewerLiked: false,
+            viewerBookmarked: false,
+            viewerComments: [],
+            profilePictureIndex: 0,
+            profilePicture: 'https://pngimg.com/uploads/knight/knight_PNG57.png',
+            nowPlayingIndex: 0,
+            isPlaying: false,
+            showMusicList: false,
+            profileStatus: "Struggling against causality... Collecting fragments of darkness.",
+            holyTrinity: ['BERSERK', 'AKIRA', 'EVANGELION']
+        };
+
+        const profilePictures = [
+            'https://pngimg.com/uploads/knight/knight_PNG57.png',
+            'https://images.unsplash.com/photo-1589396512103-53c2534a683a?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 여성 기사
+            'https://images.unsplash.com/photo-1634823247789-54a83b3c67a8?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 사이버펑크 캐릭터
+            'https://images.unsplash.com/photo-1531386151447-fd76ad50012f?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // 가면 쓴 인물
+            'https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' // 추상적 이미지
+        ];
+
+        const musicList = [
+            { title: "Guts' Theme", artist: "Susumu Hirasawa" },
+            { title: "Tank!", artist: "Seatbelts" },
+            { title: "A Cruel Angel's Thesis", artist: "Yoko Takahashi" },
+            { title: "Kaneda's Theme", artist: "Geinoh Yamashirogumi" },
+            { title: "Blade Runner Blues", artist: "Vangelis" },
+            { title: "The Ecstasy of Gold", artist: "Ennio Morricone" }
+        ];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            renderTab('HOME'); 
+            lucide.createIcons();
+            
+            const cursor = document.getElementById('custom-cursor');
+            let mouseX = 0, mouseY = 0;
+
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                cursor.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
+
+                if (state.activeTab === 'HOME') {
+                    const heroImg = document.getElementById('hero-image');
+                    if (heroImg) {
+                        const x = (mouseX / window.innerWidth - 0.5) * 10;
+                        const y = (mouseY / window.innerHeight - 0.5) * 10;
+                        const scrollY = window.scrollY;
+                        // 회전 효과 추가 (초기 요청 스타일 반영)
+                        heroImg.style.transform = `translateY(${scrollY * 0.1}px) scale(${1 + scrollY * 0.0002}) rotateY(${x * 0.5}deg) rotateX(${-y * 0.5}deg)`;
+                    }
+                }
+            });
+
+            document.addEventListener('mousedown', () => cursor.style.transform = `translate(${mouseX}px, ${mouseY}px) scale(0.8)`);
+            document.addEventListener('mouseup', () => cursor.style.transform = `translate(${mouseX}px, ${mouseY}px) scale(1)`);
+            window.addEventListener('scroll', handleScrollEffects);
+        });
+
+        function initTheme() {
+            const selector = document.getElementById('theme-selector');
+            selector.innerHTML = themes.map((theme, index) => 
+                `<button onclick="setTheme(${index})" class="w-8 h-8 rounded-full border-2 border-transparent hover:border-white transition-colors" style="background-color: ${theme.color};"></button>`
+            ).join('');
+            setTheme(0);
+        }
+
+        function setTheme(index) {
+            state.themeIndex = index;
+            const theme = themes[index];
+            document.documentElement.style.setProperty('--theme-color', theme.color);
+            document.documentElement.style.setProperty('--theme-glow', theme.glow);
+            toggleThemeSelector(false);
+        }
+
+        function toggleThemeSelector(forceShow) {
+            const selector = document.getElementById('theme-selector');
+            const isVisible = selector.classList.contains('scale-100');
+            selector.classList.toggle('scale-90', isVisible || forceShow === false);
+            selector.classList.toggle('opacity-0', isVisible || forceShow === false);
+            selector.classList.toggle('invisible', isVisible || forceShow === false);
+            selector.classList.toggle('scale-100', !isVisible && forceShow !== false);
+            selector.classList.toggle('opacity-100', !isVisible && forceShow !== false);
+            selector.classList.toggle('visible', !isVisible && forceShow !== false);
+        }
+
+        function handleScrollEffects() {
+            if (state.activeTab === 'HOME') {
+                const heroImg = document.getElementById('hero-image');
+                if (heroImg) {
+                    const scrollY = window.scrollY;
+                    const currentTransform = heroImg.style.transform;
+                    if (currentTransform.indexOf('rotate') === -1) {
+                         heroImg.style.transform = `translateY(${scrollY * 0.1}px) scale(${1 + scrollY * 0.0002})`;
+                    }
+                }
+            }
+        }
+
+        function renderTab(tabName) {
+            state.activeTab = tabName;
+            const container = document.getElementById('app-container');
+            container.classList.add('fade-in-out');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('nav-active'));
+            const activeNav = document.getElementById(`nav-${tabName.toLowerCase()}`);
+            if (activeNav) activeNav.classList.add('nav-active');
+
+            if (tabName === 'HOME') {
+                const comicKeys = Object.keys(comicsData);
+                const featuredKey = comicKeys[0];
+                const featuredComic = comicsData[featuredKey];
+
+                container.innerHTML = `
+                    <section class="relative h-screen w-full flex flex-col justify-center items-center overflow-hidden mb-20 cursor-pointer" onclick="openModal('${featuredKey}')">
+                        <div class="absolute inset-0 bg-gradient-to-b from-[#1a0505] via-[#050505] to-[#000000] z-0"></div>
+                        <div class="absolute top-[20%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-theme opacity-20 rounded-full blur-[120px] z-0 animate-pulse" style="animation-duration: 6s;"></div>
+                        
+                        <div class="relative z-20 text-center mb-8">
+                            <h1 class="font-museum text-5xl md:text-8xl text-white leading-none tracking-tighter drop-shadow-2xl mix-blend-screen scale-y-110">TIMELESS<br/><span class="text-theme">EXHIBITION</span></h1>
+                            <div class="flex justify-center items-center gap-6 mt-8">
+                                <div class="h-[1px] w-20 bg-white/20"></div>
+                                <p class="font-cyber text-xs text-gray-400 tracking-[0.4em]">FEATURED EXHIBIT</p>
+                                <div class="h-[1px] w-20 bg-white/20"></div>
+                            </div>
+                        </div>
+
+                        <div class="relative z-20 w-full max-w-5xl flex justify-center items-center h-[60vh] perspective-1000">
+                            <img id="hero-image" src="가츠 메인사진.png" alt="가츠 메인사진.png" class="h-full w-auto object-contain relative z-20 filter brightness-[0.8] contrast-[1.2] drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)] transition-transform duration-100 ease-out hover:brightness-100 pb-28">
+                            
+                            <div class="absolute bottom-10 left-4 md:left-10 z-30 text-left bg-black/80 backdrop-blur-md p-6 border border-white/10 border-l-4 border-l-theme hover:border-white/30 transition-colors max-w-xs group">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h2 class="font-museum text-3xl text-white leading-none">${featuredComic.title}</h2>
+                                    <span class="font-cyber text-[9px] text-theme border border-theme px-1.5 py-0.5 rounded animate-pulse">LIVE</span>
+                                </div>
+                                <p class="font-cyber text-[10px] text-gray-400 tracking-widest mb-4">BY ${featuredComic.author.toUpperCase()}</p>
+                                <div class="flex items-center gap-2 text-[10px] text-white font-bold tracking-widest group-hover:text-theme transition-colors">
+                                    ENTER EXHIBIT <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-2 transition-transform"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="relative w-full py-4 bg-theme/10 border-y border-theme/30 overflow-hidden mb-32">
+                        <div class="flex whitespace-nowrap animate-scroll">
+                            ${[...Array(2)].map(() => `
+                                <div class="flex gap-12 px-6 items-center opacity-80">
+                                    <span class="font-museum text-4xl text-theme font-black">THE TIMELESS ARCHIVE</span>
+                                    <span class="font-cyber text-4xl text-white/10">MASTERPIECE COLLECTION</span>
+                                    <span class="font-museum text-4xl text-theme font-black">NOSTALGIA</span>
+                                    <span class="font-cyber text-4xl text-white/10">DARK FANTASY</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <section class="max-w-7xl mx-auto px-4 md:px-8 mb-40">
+                        <div class="flex items-end justify-between mb-12 border-b border-white/10 pb-4">
+                            <div>
+                                <span class="font-cyber text-xs text-theme mb-2 block tracking-widest">TOP RATED</span>
+                                <h2 class="font-museum text-4xl md:text-5xl text-white">WEEKLY RANKING</h2>
+                            </div>
+                            <div class="text-right hidden md:block">
+                                <p class="font-cyber text-[10px] text-gray-500">UPDATED: TODAY</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                            <div class="space-y-2">
+                                ${weeklyTop.map((item, index) => `
+                                    <div onclick="openModal('${item.title.replace(/\s/g, '').toUpperCase()}')" onmouseover="updateWeeklyRankingImage(${index})" class="group relative flex items-center p-4 border-b border-white/5 hover:bg-white/5 transition-all cursor-pointer overflow-hidden">
+                                        <div class="absolute left-0 top-0 w-[2px] h-full bg-theme opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                        <span class="font-museum text-3xl w-16 text-gray-600 group-hover:text-theme transition-colors italic">${item.rank}</span> 
+                                        <div class="flex-1">
+                                            <h3 class="font-bold text-lg text-white group-hover:tracking-wider transition-all duration-300">${item.title}</h3>
+                                            <p class="text-xs text-gray-500 font-cyber">${item.author}</p>
+                                        </div>
+                                        <div class="text-xs font-cyber text-gray-500 group-hover:text-white">
+                                            ${item.change === "UP" ? `<span class="text-red-500 flex items-center gap-1"><i data-lucide="arrow-right" class="w-2.5 h-2.5 -rotate-45"></i> UP</span>` : ''}
+                                            ${item.change === "DOWN" ? `<span class="text-blue-500 flex items-center gap-1"><i data-lucide="arrow-right" class="w-2.5 h-2.5 rotate-45"></i> DN</span>` : ''}
+                                            ${item.change === "NEW" ? `<span class="text-theme blink">NEW</span>` : ''}
+                                            ${item.change === "-" ? `<span>-</span>` : ''}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div id="weekly-ranking-display" class="relative hidden md:block group cursor-pointer" onclick="openModal('${weeklyTop[0].title.replace(/\s/g, '').toUpperCase()}')">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10"></div>
+                                <img id="weekly-ranking-image" src="${weeklyTop[0].img}" class="w-full h-full object-cover filter grayscale group-hover:grayscale-0 transition-all duration-700" />
+                                <div class="absolute top-4 right-4 z-20">
+                                    <i data-lucide="star" class="w-12 h-12 text-theme fill-current drop-shadow-[0_0_15px_var(--theme-glow)] animate-pulse"></i>
+                                </div>
+                                <div class="absolute bottom-8 left-8 z-20">
+                                    <h3 id="weekly-ranking-title" class="font-museum text-6xl text-white mb-2 drop-shadow-lg">${weeklyTop[0].title}</h3>
+                                    <p class="font-cyber text-sm text-theme tracking-widest">THE MOST READ COMIC OF THE WEEK</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="mb-40 bg-[#080808] border-y border-white/5 py-20">
+                        <div class="max-w-7xl mx-auto px-4 md:px-8">
+                            <div class="mb-10 text-center">
+                                <h2 class="font-museum text-3xl text-white mb-2">DIVE INTO GENRES</h2>
+                                <p class="font-cyber text-xs text-gray-500">EXPLORE THE ARCHIVE BY CATEGORY</p>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                ${genres.map(g => `
+                                    <div class="relative h-60 border border-white/10 p-6 flex flex-col justify-end overflow-hidden group hover:border-white/50 cursor-pointer transition-all">
+                                        <div class="absolute inset-0 bg-gradient-to-b ${g.color} to-black opacity-20 group-hover:opacity-50 transition-opacity"></div>
+                                        <div class="relative z-10 transform group-hover:-translate-y-2 transition-transform">
+                                            <h3 class="font-museum text-xl text-white">${g.name}</h3>
+                                            <p class="font-cyber text-[9px] text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">${g.desc}</p>
+                                        </div>
+                                        <div class="absolute top-4 right-4 text-white/10 group-hover:text-white/30 transition-colors">
+                                            <i data-lucide="arrow-right" class="w-6 h-6 -rotate-45"></i>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="py-20 bg-neutral-900/20 border-y border-white/5 overflow-hidden mb-40 group">
+                        <div class="px-4 md:px-8 max-w-7xl mx-auto mb-12 flex justify-between items-end">
+                            <div><span class="font-cyber text-xs text-gray-500 tracking-widest block mb-2">PERMANENT COLLECTION</span><h2 class="font-museum text-4xl text-gray-200">HALL OF LEGENDS</h2></div>
+                            <div class="font-cyber text-[10px] text-gray-500 flex items-center gap-2"><span class="w-2 h-2 bg-theme rounded-full animate-pulse"></span>AUTO-SCROLL ACTIVE</div>
+                        </div>
+                        <div class="w-full overflow-hidden pl-8"><div class="flex gap-8 animate-legends w-max hover:cursor-pointer">
+                            ${[...legends, ...legends, ...legends].map(legend => `
+                                <div onclick="openModal('${legend.id}')" class="min-w-[280px] h-[420px] relative group/card bg-[#121212] border border-white/10 rounded-t-lg rounded-b-none overflow-hidden shadow-lg hover:border-theme transition-all duration-300">
+                                    <div class="absolute inset-0 transition-transform duration-300 group-hover/card:-translate-y-2">
+                                        <img src="${legend.img}" class="w-full h-full object-cover opacity-90 grayscale-[30%] group-hover/card:grayscale-0 group-hover/card:opacity-100 transition-all duration-500" />
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                                        <div class="absolute bottom-0 w-full bg-gradient-to-b from-gray-800 to-black border-t border-white/10 p-4 flex flex-col items-center text-center shadow-[0_-5px_10px_rgba(0,0,0,0.5)]">
+                                            <h3 class="font-museum text-xl text-white tracking-wider font-bold drop-shadow-md">${legend.title}</h3>
+                                            <p class="font-cyber text-[10px] text-theme tracking-widest mt-1 uppercase font-bold">MASTERPIECE</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div></div>
+                    </section>
+
+                    <footer class="relative bg-[#080808] border-t border-white/5 pt-20 pb-40 px-4 md:px-8 overflow-hidden">
+                        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 relative z-10">
+                            <div class="md:col-span-5 space-y-6">
+                                <h2 class="font-museum text-4xl text-white tracking-wider">THE TIMELESS</h2>
+                                <p class="font-sans text-gray-500 text-sm leading-relaxed max-w-sm">A digital sanctuary dedicated to preserving the masterpieces of dark fantasy and cyberpunk culture.</p>
+                            </div>
+                            <div class="md:col-span-3 space-y-6">
+                                <h4 class="font-cyber text-sm text-white tracking-widest mb-4">EXPLORE</h4>
+                                <ul class="space-y-3 font-cyber text-xs text-gray-500">
+                                    <li class="hover:text-theme cursor-pointer">CURRENT EXHIBITIONS</li>
+                                    <li class="hover:text-theme cursor-pointer">HALL OF FAME</li>
+                                </ul>
+                            </div>
+                            <div class="md:col-span-4 space-y-6">
+                                <h4 class="font-cyber text-sm text-white tracking-widest mb-4">JOIN THE VOID</h4>
+                                <div class="flex border-b border-white/20 pb-2">
+                                    <input type="email" placeholder="ENTER YOUR EMAIL" class="bg-transparent border-none outline-none text-white font-cyber text-xs w-full placeholder-gray-700 uppercase"/>
+                                    <button class="text-gray-500 hover:text-white"><i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="max-w-7xl mx-auto mt-20 border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-cyber text-gray-600">
+                            <p>© 2024 THE TIMELESS ARCHIVE. ALL RIGHTS RESERVED.</p>
+                        </div>
+                    </footer>
+                `;
+            } else if (tabName === 'SEARCH') {
+                container.innerHTML = `
+                    <div class="pt-20 px-4 md:px-8 max-w-7xl mx-auto min-h-screen flex flex-col md:flex-row gap-6">
+                        <div class="w-full md:w-1/3 flex flex-col h-[calc(100vh-140px)]">
+                            <div class="mb-8">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <i data-lucide="database" class="w-5 h-5 text-theme"></i>
+                                    <h2 class="font-museum text-2xl text-white tracking-wider">ARCHIVE</h2>
+                                </div>
+                                <p class="font-cyber text-[10px] text-gray-500 tracking-[0.2em] uppercase">Secure Database Access // Level 5</p>
+                            </div>
+                            <div class="relative mb-6 group">
+                                <div class="absolute inset-0 bg-theme/10 blur opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
+                                <input type="text" oninput="handleSearch(event)" placeholder="SEARCH DATABASE..." class="w-full bg-[#0a0a0a] border border-white/10 p-4 font-cyber text-xs text-theme placeholder-gray-700 focus:outline-none focus:border-theme/50 transition-all uppercase tracking-widest rounded-sm">
+                                <i data-lucide="search" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-700 w-4 h-4"></i>
+                            </div>
+                            <div id="search-results" class="flex-1 overflow-y-auto hide-scrollbar space-y-3 pr-2"></div>
+                        </div>
+                        <div id="search-detail" class="w-full md:w-2/3 h-[calc(100vh-140px)] bg-[#050505] border border-white/10 relative overflow-hidden flex flex-col"></div>
+                    </div>
+                `;
+                handleSearch({ target: { value: "" } });
+                renderSearchDetail(state.searchSelectedId);
+            } else if (tabName === 'ARCHIVE') {
+                container.innerHTML = `
+                    <div class="pt-20 px-4 md:px-8 max-w-7xl mx-auto min-h-screen pb-32 relative">
+                        <div class="absolute inset-0 grid-bg opacity-20 pointer-events-none"></div>
+                        <div class="flex flex-col md:flex-row justify-between items-end gap-6 mb-10 relative z-10">
+                            <div>
+                                <h2 class="font-museum text-4xl text-white tracking-wider">MY ARCHIVE</h2>
+                                <p class="font-cyber text-xs text-gray-500 mt-2 tracking-widest uppercase">CLASSIFIED DOCUMENTS: TOP SECRET</p>
+                            </div>
+                            <div class="relative group w-full md:w-72">
+                                <input type="text" oninput="handleArchiveSearch(event)" placeholder="SEARCH ARCHIVE..." class="w-full bg-[#0a0a0a] border border-white/10 p-3 pl-10 font-cyber text-xs text-white placeholder-gray-600 focus:outline-none focus:border-white/30 transition-all rounded-sm uppercase tracking-wider">
+                                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <div class="h-[1px] w-full bg-white/10 mb-8 relative z-10"></div>
+                        <div id="archive-filters" class="flex gap-3 mb-8 relative z-10 overflow-x-auto hide-scrollbar"></div>
+                        <div id="archive-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 relative z-10"></div>
+                    </div>
+                `;
+                setupArchiveFilters();
+                renderArchive();
+            } else if (tabName === 'PROFILE') {
+                container.innerHTML = `
+                    <div class="pt-24 px-4 md:px-12 max-w-7xl mx-auto min-h-screen pb-40">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <div class="lg:col-span-4 space-y-6">
+                                <div class="bg-[#080808] border border-white/10 rounded-2xl p-8 flex flex-col items-center relative overflow-hidden group hover:border-white/20 transition-colors">
+                                    <div class="w-32 h-32 rounded-full p-1 bg-gradient-to-br from-gray-800 to-black mb-6 relative">
+                                        <img src="${state.profilePicture}" class="w-full h-full rounded-full object-cover filter grayscale contrast-125 bg-gray-900" />
+                                        <button onclick="changeProfilePicture()" class="absolute bottom-0 right-0 bg-[#1a1a1a] p-2 rounded-full border border-white/10 text-gray-400 hover:bg-theme hover:text-white transition-colors"><i data-lucide="camera" class="w-3 h-3"></i></button>
+                                    </div>
+                                    <h2 class="font-museum text-3xl text-white mb-2">UNKNOWN</h2>
+                                    <div class="flex items-center gap-2 text-[10px] font-cyber text-gray-500 uppercase tracking-widest mb-8">
+                                        <i data-lucide="settings" class="w-3 h-3 animate-spin"></i> Archivist • Lv. 99
+                                    </div>
+                                    <div class="w-full relative pl-4 border-l-2 border-theme py-2 mb-8 bg-white/5 rounded-r group">
+                                        <p class="font-museum text-sm text-gray-300 italic pr-8">"${state.profileStatus}"</p>
+                                        <button onclick="editProfileStatus()" class="absolute top-1/2 right-2 -translate-y-1/2 p-1 text-gray-600 opacity-0 group-hover:opacity-100 hover:text-white transition-opacity">
+                                            <i data-lucide="pencil" class="w-3 h-3"></i>
+                                        </button>
+                                    </div>
+                                    <div class="w-full grid grid-cols-3 divide-x divide-white/10 pt-6 border-t border-white/10">
+                                        <div class="text-center"><span class="block text-xl font-bold text-white">42</span><span class="text-[9px] font-cyber text-gray-500 uppercase">Collection</span></div>
+                                        <div class="text-center"><span class="block text-xl font-bold text-white">128</span><span class="text-[9px] font-cyber text-gray-500 uppercase">Scraps</span></div>
+                                        <div class="text-center"><span class="block text-xl font-bold text-white">3.5k</span><span class="text-[9px] font-cyber text-gray-500 uppercase">Visits</span></div>
+                                    </div>
+                                </div>
+                                <div class="bg-[#080808] border border-white/10 rounded-2xl relative overflow-hidden transition-all duration-300 ${state.showMusicList ? 'h-auto' : 'h-24'}">
+                                    <div class="p-6 flex items-center gap-5">
+                                        <div class="absolute bottom-0 left-0 h-[2px] bg-theme w-1/3 z-10"></div>
+                                        <div class="w-12 h-12 bg-black rounded-full border border-white/10 flex items-center justify-center relative shrink-0">
+                                            <div class="w-3 h-3 bg-[#222] rounded-full"></div>
+                                            <div class="absolute inset-0 rounded-full border-2 border-transparent border-t-theme/50 ${state.isPlaying ? 'animate-spin' : ''}"></div>
+                                        </div>
+                                        <div class="flex-1 overflow-hidden">
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span class="text-[8px] font-cyber text-theme uppercase tracking-wider">Now Playing</span>
+                                                <button onclick="toggleMusicList()" class="text-gray-600 hover:text-white"><i data-lucide="list-music" class="w-3 h-3"></i></button>
+                                            </div>
+                                            <h4 class="font-bold text-sm text-white truncate">${musicList[state.nowPlayingIndex].title}</h4>
+                                            <p class="text-[10px] text-gray-500">${musicList[state.nowPlayingIndex].artist}</p>
+                                        </div>
+                                        <button onclick="togglePlay()" class="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors shrink-0">
+                                            <i data-lucide="${state.isPlaying ? 'pause' : 'play'}" class="w-3 h-3 fill-current"></i>
+                                        </button>
+                                    </div>
+                                    <div id="music-list-container" class="px-6 pb-4 space-y-2 overflow-hidden transition-all duration-300 ${state.showMusicList ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}">
+                                        <div class="h-[1px] w-full bg-white/10 my-2"></div>
+                                        ${musicList.map((song, index) => `
+                                            <div onclick="changeSong(${index})" class="flex items-center justify-between p-2 rounded hover:bg-white/5 cursor-pointer text-xs ${index === state.nowPlayingIndex ? 'text-theme' : 'text-gray-400'}">
+                                                <div class="flex items-center gap-3">
+                                                    ${index === state.nowPlayingIndex ? '<i data-lucide="volume-2" class="w-3 h-3"></i>' : '<i data-lucide="music" class="w-3 h-3"></i>'}
+                                                    <span>${song.title}</span>
+                                                </div>
+                                                <span class="text-gray-600">${song.artist}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="lg:col-span-8 space-y-8">
+                                <div>
+                                    <div class="flex justify-between items-end mb-6">
+                                        <div>
+                                            <span class="font-cyber text-[10px] text-theme tracking-[0.2em] uppercase mb-1 block">Curator's Choice</span>
+                                            <h3 class="font-museum text-3xl text-white">THE HOLY TRINITY</h3>
+                                        </div>
+                                        <button onclick="openTrinityManager()" class="text-[10px] font-cyber text-gray-500 flex items-center gap-2 hover:text-white transition-colors">MANAGE COLLECTION <i data-lucide="arrow-right" class="w-3 h-3"></i></button>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-4">
+                                        ${state.holyTrinity.map(comicId => {
+                                            const comic = comicsData[comicId];
+                                            return `
+                                                <div class="aspect-[3/4] relative bg-[#080808] border border-white/10 rounded overflow-hidden group cursor-pointer" onclick="openModal('${comicId}')">
+                                                    <img src="${comic.thumb}" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 grayscale transition-all duration-500" />
+                                                    <div class="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black to-transparent"><h4 class="font-museum text-lg text-white">${comic.title}</h4></div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            lucide.createIcons();
+            setTimeout(() => container.classList.remove('fade-in-out'), 800);
+        }
+
+        function updateWeeklyRankingImage(index) {
+            const item = weeklyTop[index];
+            if (!item) return;
+
+            const display = document.getElementById('weekly-ranking-display');
+            const image = document.getElementById('weekly-ranking-image');
+            const title = document.getElementById('weekly-ranking-title');
+
+            image.src = item.img;
+            title.innerText = item.title;
+            display.setAttribute('onclick', `openModal('${item.title.replace(/\s/g, '').toUpperCase()}')`);
+            image.classList.add('fade-in-fast');
+            setTimeout(() => image.classList.remove('fade-in-fast'), 300);
+        }
+
+        function changeProfilePicture() {
+            state.profilePictureIndex = (state.profilePictureIndex + 1) % profilePictures.length;
+            state.profilePicture = profilePictures[state.profilePictureIndex];
+            renderTab('PROFILE');
+        }
+
+        function handleSearch(event) {
+            const searchTerm = event.target.value.toLowerCase();
+            const resultsContainer = document.getElementById('search-results');
+            
+            const filteredData = searchDatabase.filter(item => 
+                item.name.toLowerCase().includes(searchTerm) || 
+                item.subtitle.toLowerCase().includes(searchTerm) ||
+                item.type.toLowerCase().includes(searchTerm)
+            );
+
+            if (filteredData.length === 0) {
+                resultsContainer.innerHTML = `<div class="text-center py-10"><p class="font-cyber text-gray-500">NO RESULTS FOUND</p></div>`;
+                return;
+            }
+
+            resultsContainer.innerHTML = filteredData.map(item => {
+                const isSelected = item.id === state.searchSelectedId;
+                return `
+                    <div onclick="renderSearchDetail('${item.id}')" class="relative p-3 border cursor-pointer transition-all flex items-center gap-4 group ${isSelected ? 'bg-[#111] border-theme/30' : 'bg-[#0a0a0a] border-white/5 hover:border-white/20 hover:bg-[#111]'}">
+                        <div class="w-12 h-12 bg-neutral-900 overflow-hidden relative border ${isSelected ? 'border-theme/50' : 'border-white/10'}">
+                            <img src="${item.img}" class="w-full h-full object-cover grayscale opacity-60 group-hover:opacity-100 group-hover:grayscale-0 transition-all" />
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-museum text-sm mb-1 truncate ${isSelected ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}">${item.name}</h4>
+                            <p class="font-cyber text-[9px] text-gray-600 tracking-widest uppercase truncate">${item.subtitle}</p>
+                        </div>
+                        <div class="flex items-center">
+                            ${isSelected ? `<i data-lucide="zap" class="w-3.5 h-3.5 text-theme fill-current animate-pulse"></i>` : `<span class="font-cyber text-[8px] text-gray-700 border border-white/5 px-1.5 py-0.5 rounded uppercase">${item.type}</span>`}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function renderSearchDetail(id) {
+            state.searchSelectedId = id;
+            const item = searchDatabase.find(d => d.id === id);
+            if (!item) return;
+
+            const detailContainer = document.getElementById('search-detail');
+            detailContainer.innerHTML = `
+                <div class="absolute inset-0 grid-bg opacity-30 pointer-events-none"></div>
+                <div class="absolute top-6 left-6 font-cyber text-[10px] text-theme/70 tracking-widest">SYS.MONITOR // ONLINE</div>
+                <div class="flex-1 flex flex-col items-center justify-center relative z-10 p-8">
+                    <div class="relative w-64 h-64 md:w-80 md:h-80 mb-10 group">
+                        <div class="absolute top-0 left-0 w-full h-[1px] bg-theme/50"></div>
+                        <div class="absolute bottom-0 left-0 w-full h-[1px] bg-theme/50"></div>
+                        <div class="w-full h-full overflow-hidden relative border border-white/5 bg-black">
+                            <img src="${item.img}" class="w-full h-full object-cover opacity-80 filter sepia-[.5] hue-rotate-[-30deg] contrast-125" />
+                            <div class="absolute inset-x-0 h-[2px] bg-theme/80 shadow-[0_0_15px_var(--theme-glow)] animate-scan z-20"></div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black opacity-60"></div>
+                        </div>
+                        <div class="absolute -top-1 -left-1 w-2 h-2 border-t border-l border-theme"></div>
+                        <div class="absolute -top-1 -right-1 w-2 h-2 border-t border-r border-theme"></div>
+                        <div class="absolute -bottom-1 -left-1 w-2 h-2 border-b border-l border-theme"></div>
+                        <div class="absolute -bottom-1 -right-1 w-2 h-2 border-b border-r border-theme"></div>
+                    </div>
+                    <div class="w-full max-w-lg bg-[#0a0a0a]/80 backdrop-blur-sm border border-white/10 p-6 relative">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h2 class="font-museum text-3xl text-white tracking-wide mb-1">${item.name}</h2>
+                                <p class="font-cyber text-[10px] text-theme tracking-[0.3em] uppercase font-bold">${item.subtitle}</p>
+                            </div>
+                            <div class="text-right">
+                                <i data-lucide="cpu" class="w-4 h-4 text-theme/50 mb-1 inline-block"></i>
+                                <p class="font-cyber text-[9px] text-gray-600">ID: ${item.id}_001</p>
+                            </div>
+                        </div>
+                        <div class="h-[1px] w-full bg-white/10 mb-4"></div>
+                        <p class="font-sans text-sm text-gray-400 leading-relaxed mb-6 h-12 overflow-hidden">${item.desc}</p>
+                        <div class="grid grid-cols-3 gap-6 font-cyber text-[9px] text-gray-500 uppercase tracking-widest">
+                            <div>
+                                <span class="block mb-2">Strength</span>
+                                <div class="h-[2px] w-full bg-gray-800"><div class="h-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.6)]" style="width: ${item.stats.str}%"></div></div>
+                            </div>
+                            <div>
+                                <span class="block mb-2">Speed</span>
+                                <div class="h-[2px] w-full bg-gray-800"><div class="h-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.6)]" style="width: ${item.stats.spd}%"></div></div>
+                            </div>
+                            <div>
+                                <span class="block mb-2">Intel</span>
+                                <div class="h-[2px] w-full bg-gray-800"><div class="h-full bg-green-600 shadow-[0_0_8px_rgba(22,163,74,0.6)]" style="width: ${item.stats.int}%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+            
+            document.querySelectorAll('#search-results > div').forEach(el => {
+                el.classList.remove('bg-[#111]', 'border-theme/30');
+                el.classList.add('bg-[#0a0a0a]', 'border-white/5', 'hover:border-white/20', 'hover:bg-[#111]');
+            });
+            const selectedEl = document.querySelector(`[onclick="renderSearchDetail('${id}')"]`);
+            if (selectedEl) {
+                selectedEl.classList.add('bg-[#111]', 'border-theme/30');
+                selectedEl.classList.remove('bg-[#0a0a0a]', 'border-white/5', 'hover:border-white/20', 'hover:bg-[#111]');
+            }
+        }
+
+        function setupArchiveFilters() {
+            const filters = ['ALL', 'SCENES', 'CHARACTERS', 'QUOTES'];
+            const filterContainer = document.getElementById('archive-filters');
+            filterContainer.innerHTML = filters.map(tab => `
+                <button onclick="handleArchiveFilter('${tab}')" class="archive-filter-btn px-5 py-2 font-cyber text-[10px] tracking-wider border transition-all rounded-sm uppercase ${tab === 'ALL' ? 'bg-white text-black border-white' : 'bg-[#0a0a0a] border-white/10 text-gray-500 hover:text-white hover:border-white/30'}">
+                    ${tab}
+                </button>
+            `).join('');
+        }
+
+        function handleArchiveFilter(filter) {
+            renderArchive('', filter);
+            document.querySelectorAll('.archive-filter-btn').forEach(btn => {
+                if (btn.innerText.trim() === filter) {
+                    btn.className = "archive-filter-btn px-5 py-2 font-cyber text-[10px] tracking-wider border transition-all rounded-sm uppercase bg-white text-black border-white";
+                } else {
+                    btn.className = "archive-filter-btn px-5 py-2 font-cyber text-[10px] tracking-wider border transition-all rounded-sm uppercase bg-[#0a0a0a] border-white/10 text-gray-500 hover:text-white hover:border-white/30";
+                }
+            });
+        }
+
+        function handleArchiveSearch(event) {
+            const searchTerm = event.target.value;
+            const activeBtn = document.querySelector('.archive-filter-btn.bg-white');
+            const activeFilter = activeBtn ? activeBtn.innerText.trim() : 'ALL';
+            renderArchive(searchTerm, activeFilter);
+        }
+
+        function renderArchive(searchTerm = '', activeFilter = 'ALL') {
+            const grid = document.getElementById('archive-grid');
+            const filteredScraps = archiveData.filter(item => {
+                const matchesTab = activeFilter === 'ALL' || (activeFilter === 'SCENES' && (item.type === 'SCENE' || item.type === 'BG')) || (activeFilter === 'CHARACTERS' && item.type === 'CHAR') || (activeFilter === 'QUOTES' && item.type === 'TEXT');
+                const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) || item.type.toLowerCase().includes(searchTerm.toLowerCase());
+                return matchesTab && matchesSearch;
+            });
+
+            grid.innerHTML = `
+                <div class="aspect-[3/4] border border-dashed border-white/10 rounded-sm flex flex-col items-center justify-center gap-4 text-gray-600 hover:text-white hover:border-white/30 cursor-pointer transition-colors bg-[#0a0a0a]/50 hover:bg-white/5 active:scale-95 group">
+                    <div class="w-12 h-12 rounded-full border border-current flex items-center justify-center transition-transform group-hover:rotate-90"><i data-lucide="plus" class="w-6 h-6"></i></div>
+                    <span class="font-cyber text-xs tracking-widest uppercase">ADD SCRAP</span> 
+                </div>
+                ${filteredScraps.map(item => `
+                    <div class="group relative bg-[#0a0a0a] border border-white/5 rounded-sm overflow-hidden hover:border-white/20 transition-all duration-300">
+                        <div class="aspect-[3/4] overflow-hidden relative bg-[#111]">
+                            ${item.img ? `<img src="${item.img}" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-all duration-500" />`
+                                        : `<div class="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-[#080808] relative"><i data-lucide="quote" class="w-6 h-6 text-white/10 absolute top-4 left-4"></i><p class="font-museum text-gray-300 italic leading-relaxed">"${item.text}"</p><i data-lucide="quote" class="w-6 h-6 text-white/10 absolute bottom-4 right-4 rotate-180"></i></div>`}
+                        </div>
+                        <div class="p-4 bg-[#080808] border-t border-white/5">
+                            <h4 class="font-museum text-sm text-gray-200 truncate mb-1">${item.title}</h4>
+                            <span class="text-[9px] font-cyber text-gray-600 uppercase tracking-wider">${item.type}</span>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+            lucide.createIcons();
+        }
+
+        function openModal(id) {
+            const data = comicsData[id] || Object.values(comicsData).find(c => c.title.replace(/\s/g, '').toUpperCase() === id.replace(/\s/g, '').toUpperCase());
+            if(!data) return;
+            state.currentComic = data;
+
+            const modalContent = document.getElementById('modal-content');
+            modalContent.innerHTML = `
+                <button onclick="closeModal()" class="absolute top-4 right-4 z-50 p-2 bg-black/50 rounded-full text-white hover:bg-white/20 transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+                <div class="p-5 flex gap-5 items-start border-b border-white/10 pt-12 md:pt-8">
+                    <div class="w-[120px] md:w-[160px] aspect-[3/4] rounded-md overflow-hidden shadow-lg shrink-0 border border-white/10">
+                        <img src="${data.thumb}" class="w-full h-full object-cover" alt="thumbnail" />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h2 class="text-2xl font-bold text-white mb-1 truncate font-museum">${data.title}</h2>
+                        <p class="text-xs text-gray-400 mb-3">${data.author} · 연재중 | 15+</p>
+                        <p class="text-xs text-gray-300 leading-relaxed line-clamp-3 mb-3">${data.desc}</p>
+                        <div class="flex flex-wrap gap-2">
+                            ${data.tags.map(tag => `<span class="px-2 py-1 bg-[#222] text-[10px] text-gray-400 rounded">${tag}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-5 py-4 grid grid-cols-[1.2fr_1.2fr_0.6fr] gap-2 border-b border-white/5">
+                    <button class="bg-[#00dc64] hover:bg-[#00c055] text-black font-bold py-3 rounded flex items-center justify-center gap-1 transition-colors"><i data-lucide="plus" class="w-4 h-4"></i> 관심</button>
+                    <button onclick="openViewer({ ep: 1 })" class="bg-[#333] hover:bg-[#444] text-white font-bold py-3 rounded flex items-center justify-center gap-1 transition-colors">첫화보기 <span class="text-xs font-normal text-gray-300 ml-1">1화</span></button>
+                    <button class="bg-[#333] hover:bg-[#444] text-white py-3 rounded flex items-center justify-center transition-colors"><i data-lucide="share-2" class="w-5 h-5"></i></button>
+                </div>
+
+                <div class="flex-1 bg-[#121212] p-4 space-y-2">
+                    ${[...Array(10)].map((_, i) => `
+                        <div onclick="openViewer({ ep: ${364 - i} })" class="flex gap-4 p-3 hover:bg-white/5 rounded cursor-pointer group border border-transparent hover:border-white/10">
+                            <div class="w-20 h-14 bg-gray-800 overflow-hidden"><img src="https://source.unsplash.com/random/200x150?dark&sig=${i}" class="w-full h-full object-cover opacity-60 group-hover:opacity-100"></div>
+                            <div>
+                                <h4 class="text-sm text-gray-300 group-hover:text-theme">Ep. ${364 - i}. The Eclipse part ${i+1}</h4>
+                                <p class="text-[10px] text-gray-500">2024.03.15</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `; 
+            document.getElementById('modal-overlay').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+        }
+
+        function openTrinityManager() {
+            const modalContent = document.getElementById('modal-content');
+            let tempSelection = [...state.holyTrinity];
+
+            function renderManagerContent() {
+                modalContent.innerHTML = `
+                    <div class="flex flex-col h-full">
+                        <div class="p-6 border-b border-white/10">
+                            <h2 class="font-museum text-2xl text-white">Manage Holy Trinity</h2>
+                            <p class="font-cyber text-xs text-gray-500 mt-1">Select up to 3 masterpieces for your collection.</p>
+                        </div>
+                        <div class="flex-1 p-6 overflow-y-auto grid grid-cols-2 md:grid-cols-3 gap-4">
+                            ${Object.keys(comicsData).map(comicId => {
+                                const comic = comicsData[comicId];
+                                const isSelected = tempSelection.includes(comicId);
+                                return `
+                                    <div onclick="toggleTrinitySelection('${comicId}')" class="aspect-[3/4] relative rounded overflow-hidden group cursor-pointer border-2 ${isSelected ? 'border-theme' : 'border-transparent'} transition-all">
+                                        <img src="${comic.thumb}" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" />
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                                        <div class="absolute bottom-0 left-0 w-full p-3">
+                                            <h4 class="font-museum text-sm text-white truncate">${comic.title}</h4>
+                                        </div>
+                                        ${isSelected ? `<div class="absolute top-2 right-2 w-5 h-5 bg-theme rounded-full flex items-center justify-center text-black"><i data-lucide="check" class="w-3 h-3"></i></div>` : ''}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        <div class="p-4 border-t border-white/10 flex justify-end gap-3 bg-[#0a0a0a]">
+                            <button onclick="closeModal()" class="px-6 py-2 text-xs font-cyber border border-white/20 rounded hover:bg-white/10">CANCEL</button>
+                            <button onclick="saveTrinitySelection()" class="px-6 py-2 text-xs font-cyber bg-theme text-black font-bold rounded hover:opacity-90">SAVE CHANGES</button>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+
+            window.toggleTrinitySelection = (comicId) => {
+                const index = tempSelection.indexOf(comicId);
+                if (index > -1) {
+                    tempSelection.splice(index, 1);
+                } else if (tempSelection.length < 3) {
+                    tempSelection.push(comicId);
+                } else {
+                    alert("You can only select up to 3 items.");
+                }
+                renderManagerContent();
+            };
+
+            window.saveTrinitySelection = () => {
+                state.holyTrinity = [...tempSelection];
+                closeModal();
+                renderTab('PROFILE');
+            };
+
+            renderManagerContent();
+            document.getElementById('modal-overlay').classList.remove('hidden');
+        }
+
+        function openViewer(episodeData) {
+            const data = state.currentComic;
+            const viewer = document.getElementById('viewer-overlay');
+            state.currentEpisode = episodeData.ep;
+            state.viewerComments = [...data.comments];
+
+            viewer.innerHTML = `
+                <div id="chapter-list-sidebar" class="fixed inset-y-0 left-0 w-64 bg-[#111] border-r border-white/10 z-[70] transform transition-transform duration-300 chapter-list-hidden">
+                    <div class="p-4 border-b border-white/10 flex justify-between items-center">
+                        <h3 class="font-bold text-white">EPISODES</h3>
+                        <button onclick="toggleChapterList(false)"><i data-lucide="x" class="w-[18px] h-[18px] text-gray-500 hover:text-white"></i></button>
+                    </div>
+                    <div class="overflow-y-auto h-full pb-20">
+                        ${[...Array(20)].map((_, i) => `
+                            <div onclick="changeEpisode(${i + 1})" class="p-3 border-b border-white/5 hover:bg-white/5 cursor-pointer flex justify-between group">
+                                <span class="text-xs ${i + 1 === state.currentEpisode ? 'text-theme font-bold' : 'text-gray-400 group-hover:text-white'}">Ep. ${i + 1}</span>
+                                <span class="text-[10px] text-gray-600">24.03.15</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div id="viewer-top-bar" class="fixed top-0 left-0 w-full bg-black/90 backdrop-blur-md border-b border-white/10 p-4 flex items-center justify-between transition-transform duration-300 z-50">
+                    <div class="flex items-center gap-4">
+                        <button onclick="closeViewer()" class="p-2 hover:bg-white/10 rounded-full"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+                        <button onclick="toggleChapterList(true)" class="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white flex items-center gap-2">
+                            <i data-lucide="list-music" class="w-5 h-5"></i> <span class="text-xs font-cyber hidden md:inline">LIST</span>
+                        </button>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-sm font-bold text-white">${data.title}</h3>
+                        <p class="text-[10px] text-gray-500">Ep. ${state.currentEpisode}</p>
+                    </div>
+                    <div class="w-16 flex justify-end gap-2">
+                        <button id="bookmark-btn" onclick="toggleBookmark()" class="p-2 hover:text-theme ${state.viewerBookmarked ? 'text-theme' : ''}"><i data-lucide="bookmark" class="w-5 h-5 ${state.viewerBookmarked ? 'fill-current' : ''}"></i></button>
+                    </div>
+                </div>
+
+                <div class="fixed top-0 left-0 w-full h-1 bg-gray-800 z-[60]">
+                    <div id="reading-progress" class="h-full bg-theme transition-all duration-100" style="width: 0%;"></div>
+                </div>
+
+                <div id="viewer-container" onscroll="updateProgress()" onclick="toggleViewerUI()" class="flex-1 overflow-y-auto hide-scrollbar w-full max-w-3xl mx-auto bg-[#111] pb-32 relative shadow-2xl">
+                </div>
+
+                <div id="viewer-bottom-bar" class="fixed bottom-0 left-0 w-full bg-black/90 backdrop-blur-md border-t border-white/10 p-4 transition-transform duration-300 z-50">
+                    <div class="max-w-3xl mx-auto flex justify-between items-center">
+                        <div class="flex gap-4">
+                            <button id="like-btn" onclick="toggleLike()" class="flex flex-col items-center gap-1 ${state.viewerLiked ? 'text-theme' : 'text-gray-400'} hover:text-theme transition-colors"><i data-lucide="heart" class="w-5 h-5 ${state.viewerLiked ? 'fill-current' : ''}"></i><span class="text-[10px]">9.8k</span></button>
+                            <button onclick="scrollToComments()" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors"><i data-lucide="message-circle" class="w-5 h-5"></i><span id="viewer-comment-count" class="text-[10px]">${state.viewerComments.length}</span></button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="changeEpisode(state.currentEpisode - 1)" class="px-4 py-2 border border-white/20 rounded text-xs hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" ${state.currentEpisode <= 1 ? 'disabled' : ''}>Prev</button>
+                            <button onclick="changeEpisode(state.currentEpisode + 1)" class="px-4 py-2 border border-white/20 rounded text-xs hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" ${state.currentEpisode >= 20 ? 'disabled' : ''}>Next</button>
+                        </div>
+                        <button onclick="alert('공유 기능은 준비 중입니다.')" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors"><i data-lucide="share-2" class="w-5 h-5"></i><span class="text-[10px] font-cyber">SHARE</span></button>
+                    </div>
+                </div>
+            `;
+            
+            renderViewerContent();
+            
+            viewer.classList.remove('hidden');
+            viewer.classList.add('flex');
+            document.getElementById('viewer-container').scrollTop = 0;
+            closeModal();
+            lucide.createIcons();
+        }
+
+        function renderViewerContent() {
+            const data = state.currentComic;
+            const container = document.getElementById('viewer-container');
+            if (!container || !data) return;
+
+            const imagesHtml = data.viewerImages.map((src, i) => `
+                <div class="relative group/cut">
+                    <img src="${src}" class="w-full block select-none" alt="cut-${i}" />
+                    ${data.pins.filter(pin => pin.imageIndex === i).map((pin, pinIndex) => `
+                        <div class="absolute z-20" style="left: ${pin.x}%; top: ${pin.y}%;">
+                            <div class="relative -translate-x-1/2 -translate-y-1/2 cursor-pointer group" onclick="event.stopPropagation(); togglePin('${i}-${pinIndex}');">
+                                <div class="absolute inset-0 bg-theme rounded-full blur-md opacity-60 animate-ping"></div>
+                                <div class="relative w-4 h-4 bg-theme rounded-full shadow-[0_0_15px_var(--theme-glow)] border-2 border-white/80 hover:scale-125 transition-transform duration-300"></div>
+                            </div>
+                            <div id="pin-popup-${i}-${pinIndex}" class="absolute left-1/2 top-6 -translate-x-1/2 w-72 bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl transition-all duration-300 origin-top z-30 opacity-0 invisible scale-95 -translate-y-2" onclick="event.stopPropagation();">
+                                <p class="text-xs text-gray-300 leading-relaxed">"${pin.comment}"</p>
+                                <div class="mt-2 text-right text-[10px] text-gray-500">- ${pin.title} -</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('');
+
+            const commentsHtml = `
+                <div class="p-8 md:p-16 bg-black relative z-10 space-y-12">
+                    <div>
+                        <h4 id="comment-section-count" class="text-lg font-bold mb-6 flex items-center gap-2">COMMENTS <span class="text-theme text-sm">${state.viewerComments.length}</span></h4>
+                        <div class="flex gap-4 mb-8">
+                            <div class="w-10 h-10 rounded-full bg-gray-800 shrink-0 overflow-hidden"><img src="https://pngimg.com/uploads/knight/knight_PNG57.png" class="w-full h-full object-cover"/></div>
+                            <div class="flex-1 relative">
+                                <input type="text" id="comment-input" onkeydown="addComment(event)" placeholder="Add a comment... (Press Enter)" class="w-full bg-transparent border-b border-white/20 py-2 px-1 text-sm focus:outline-none focus:border-theme transition-colors placeholder-gray-600" />
+                            </div>
+                        </div>
+                        <div id="comment-list" class="space-y-6">
+                            ${state.viewerComments.map((c, idx) => `
+                                <div class="flex gap-4 group">
+                                    <div class="w-8 h-8 rounded-full bg-gray-800 shrink-0 overflow-hidden opacity-70 group-hover:opacity-100 transition-opacity"><img src="https://source.unsplash.com/random/100x100?sig=${idx}" class="w-full h-full object-cover"/></div>
+                                    <div class="flex-1">
+                                        <div class="flex items-baseline gap-2 mb-1">
+                                            <span class="text-xs font-bold text-gray-300 group-hover:text-theme transition-colors">${c.user}</span>
+                                            <span class="text-[10px] text-gray-600">Just now</span>
+                                        </div>
+                                        <p class="text-xs text-gray-400 leading-relaxed">${c.text}</p>
+                                        <div class="flex items-center gap-3 mt-2 text-[10px] text-gray-600">
+                                            <button class="hover:text-white flex items-center gap-1"><i data-lucide="thumbs-up" class="w-2.5 h-2.5"></i> ${c.likes}</button>
+                                            <button class="hover:text-white">Reply</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <button class="w-full py-5 bg-theme text-black font-bold text-lg rounded-sm hover:opacity-90 transition-all hover:tracking-widest duration-300 shadow-[0_0_20px_var(--theme-glow)]">NEXT EPISODE</button>
+                </div>
+            `;
+
+            container.innerHTML = imagesHtml + commentsHtml;
+            lucide.createIcons();
+        }
+
+        function changeEpisode(newEp) {
+            if (newEp < 1 || newEp > 20) return; // 에피소드 범위 제한
+            openViewer({ ep: newEp });
+            toggleChapterList(false);
+        }
+
+        function scrollToComments() {
+            const container = document.getElementById('viewer-container');
+            const commentsSection = document.getElementById('comment-section-count');
+            if (container && commentsSection) {
+                container.scrollTo({ top: commentsSection.offsetTop - 50, behavior: 'smooth' });
+            }
+        }
+
+        function closeViewer() {
+            const viewer = document.getElementById('viewer-overlay');
+            viewer.classList.add('hidden');
+            viewer.classList.remove('flex');
+        }
+
+        function updateProgress() {
+            const container = document.getElementById('viewer-container');
+            if (!container) return;
+            const percent = (container.scrollTop / (container.scrollHeight - container.clientHeight)) * 100;
+            document.getElementById('reading-progress').style.width = percent + '%';
+        }
+
+        function toggleViewerUI() {
+            state.viewerUIHidden = !state.viewerUIHidden;
+            document.getElementById('viewer-top-bar')?.classList.toggle('viewer-ui-hidden', state.viewerUIHidden);
+            document.getElementById('viewer-bottom-bar')?.classList.toggle('viewer-ui-hidden-bottom', state.viewerUIHidden);
+            toggleChapterList(false);
+            if (state.activePinId) togglePin(state.activePinId);
+        }
+
+        function toggleChapterList(show) {
+            state.viewerShowChapterList = show;
+            document.getElementById('chapter-list-sidebar')?.classList.toggle('chapter-list-hidden', !show);
+        }
+
+        function togglePin(pinId) {
+            if (state.activePinId && state.activePinId !== pinId) {
+                const oldPopup = document.getElementById(`pin-popup-${state.activePinId}`);
+                if (oldPopup) {
+                    oldPopup.classList.add('opacity-0', 'invisible', 'scale-95', '-translate-y-2');
+                    oldPopup.classList.remove('opacity-100', 'visible', 'scale-100', 'translate-y-0');
+                }
+            }
+            const newPopup = document.getElementById(`pin-popup-${pinId}`);
+            if (newPopup) {
+                const isVisible = newPopup.classList.contains('opacity-100');
+                newPopup.classList.toggle('opacity-0', isVisible);
+                newPopup.classList.toggle('invisible', isVisible);
+                newPopup.classList.toggle('scale-95', isVisible);
+                newPopup.classList.toggle('-translate-y-2', isVisible);
+                newPopup.classList.toggle('opacity-100', !isVisible);
+                newPopup.classList.toggle('visible', !isVisible);
+                newPopup.classList.toggle('scale-100', !isVisible);
+                newPopup.classList.toggle('translate-y-0', !isVisible);
+            }
+            state.activePinId = (state.activePinId === pinId) ? null : pinId;
+        }
+
+        function toggleLike() {
+            state.viewerLiked = !state.viewerLiked;
+            const btn = document.getElementById('like-btn');
+            const icon = btn.querySelector('i');
+            btn.classList.toggle('text-theme', state.viewerLiked);
+            btn.classList.toggle('text-gray-400', !state.viewerLiked);
+            icon.classList.toggle('fill-current', state.viewerLiked);
+        }
+
+        function toggleBookmark() {
+            state.viewerBookmarked = !state.viewerBookmarked;
+            const btn = document.getElementById('bookmark-btn');
+            const icon = btn.querySelector('i');
+            btn.classList.toggle('text-theme', state.viewerBookmarked);
+            icon.classList.toggle('fill-current', state.viewerBookmarked);
+        }
+
+        function togglePlay() {
+            state.isPlaying = !state.isPlaying;
+            renderTab('PROFILE');
+        }
+
+        function toggleMusicList() {
+            state.showMusicList = !state.showMusicList;
+            renderTab('PROFILE');
+        }
+
+        function changeSong(index) {
+            state.nowPlayingIndex = index;
+            renderTab('PROFILE');
+        }
+
+        function editProfileStatus() {
+            const newStatus = prompt("Enter new status message:", state.profileStatus);
+            if (newStatus !== null && newStatus.trim() !== "") {
+                state.profileStatus = newStatus;
+                renderTab('PROFILE');
+            }
+        }
+
+
+        function addComment(event) {
+            if (event.key === 'Enter') {
+                const input = document.getElementById('comment-input');
+                const text = input.value.trim();
+                if (text) {
+                    const newComment = { user: "Me", text: text, likes: "0" };
+                    state.viewerComments.unshift(newComment);
+                    input.value = "";
+                    
+                    const commentList = document.getElementById('comment-list');
+                    const newCommentEl = document.createElement('div');
+                    newCommentEl.className = 'flex gap-4 group fade-in';
+                    newCommentEl.innerHTML = `
+                        <div class="w-8 h-8 rounded-full bg-gray-800 shrink-0 overflow-hidden"><img src="https://source.unsplash.com/random/100x100?sig=${Date.now()}" class="w-full h-full object-cover"/></div>
+                        <div class="flex-1">
+                            <div class="flex items-baseline gap-2 mb-1">
+                                <span class="text-xs font-bold text-gray-300 group-hover:text-theme transition-colors">${newComment.user}</span>
+                                <span class="text-[10px] text-gray-600">Just now</span>
+                            </div>
+                            <p class="text-xs text-gray-400 leading-relaxed">${newComment.text}</p>
+                            <div class="flex items-center gap-3 mt-2 text-[10px] text-gray-600">
+                                <button class="hover:text-white flex items-center gap-1"><i data-lucide="thumbs-up" class="w-2.5 h-2.5"></i> ${newComment.likes}</button>
+                                <button class="hover:text-white">Reply</button>
+                            </div>
+                        </div>`;
+                    commentList.prepend(newCommentEl);
+                    lucide.createIcons({ nodes: newCommentEl.querySelectorAll('[data-lucide]') });
+                    
+                    document.getElementById('viewer-comment-count').innerText = state.viewerComments.length;
+                    document.querySelector('#comment-section-count span').innerText = state.viewerComments.length;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
